@@ -35,7 +35,7 @@ code-links:
       - text: Add a review
         icon: github
         href: https://github.com/NINAnor/ecRxiv
-        bibliography: references.bib
+bibliography: references.bib
 ---
 
 <!--# This is a template for how to document the indicator analyses. Make sure also to not change the order, or modify, the headers, unless you really need to. This is because it easier to read if all the indicators are presented using the same layout. If there is one header where you don't have anything to write, just leave the header as is, and don't write anything below it. If you are providing code, be careful to annotate and comment on every step in the analysis. Before starting it is recommended to fill in as much as you can in the metadata file. This file will populate the initial table in your output.-->
@@ -146,7 +146,8 @@ meta |>
 ## Logg
 
 <!--# Update this logg with short messages for each update -->
-- 01 Jan. 1901 - Original PR
+- 25 Jun. 2025 - Original PR
+- 01 Sept. 2025 - Modifications by editor ALK
 :::
 
 
@@ -185,9 +186,9 @@ Three data sources were used (see more details in the following section): \
 
 || Origin | Used for | Link |
 |---------|-----|------|------|
-| **Grunnkart**     |  NIBIO   | Extract urban green areas | Available from NIBIO: https://kartkatalog.geonorge.no/metadata/grunnkart-for-bruk-i-arealregnskap-testversjon-1/28c28e3a-d88f-4a34-8c60-5efe6d56a44d. Or available from NINA's internal repository: /data/R/GeoSpatialData/LandUse/Norway_Arealregnskap/Original/GrunnkartArealregnskap FGDB-format. |
-| **Administrative boundaries - Local Administrative Units**      |  European Commission    | Delineate Local Adminstrative Units in Norway | Raw data available from Eurostat here: https://ec.europa.eu/eurostat/web/gisco/geodata/statistical-units/local-administrative-units. Or available from NINA's internal repository here: /data/P-Prosjekter2/412413_2023_no_egd/git_data/Adminstrative_boundaries_NO. Data already prepared for URGR_001 here: /data/P-Prosjekter2/412413_2023_no_egd/git_data/Adminstrative_boundaries_NO.  | 
-| **Administrative boundaries - DEGURBA**      | European Commission    | Used to select the Local Administrative Units classified as "cities" (`DEGURBA = 1`) and the adjacent Local Adminstrative Units classified as "towns and suburbs" (`DEGURBA = 2`) |  Raw file available from Eurostat here: https://ec.europa.eu/eurostat/web/nuts/local-administrative-units. Or from NINA's internal repository here: /data/P-Prosjekter2/412413_2023_no_egd/git_data/Administrative_boundaries_NO |
+| **Grunnkart**     |  NIBIO   | Extract urban green areas | Available from [NIBIO](^https://kartkatalog.geonorge.no/metadata/grunnkart-for-bruk-i-arealregnskap-testversjon-1/28c28e3a-d88f-4a34-8c60-5efe6d56a44d4$). Or available from NINA's internal repository: /data/R/GeoSpatialData/LandUse/Norway_Arealregnskap/Original/GrunnkartArealregnskap FGDB-format. |
+| **Administrative boundaries - Local Administrative Units**      |  European Commission    | Delineate Local Adminstrative Units in Norway | Raw data available from [Eurostat](^https://ec.europa.eu/eurostat/web/gisco/geodata/statistical-units/local-administrative-units$). Or available from NINA's internal repository here: /data/P-Prosjekter2/412413_2023_no_egd/git_data/Adminstrative_boundaries_NO. Data already prepared for URGR_001 here: /data/P-Prosjekter2/412413_2023_no_egd/git_data/Adminstrative_boundaries_NO.  | 
+| **Administrative boundaries - DEGURBA**      | European Commission    | Used to select the Local Administrative Units classified as "cities" (`DEGURBA = 1`) and the adjacent Local Adminstrative Units classified as "towns and suburbs" (`DEGURBA = 2`) |  Raw file available from [Eurostat](^https://ec.europa.eu/eurostat/web/nuts/local-administrative-units$). Or from NINA's internal repository here: /data/P-Prosjekter2/412413_2023_no_egd/git_data/Administrative_boundaries_NO |
 
 
 **2. URGR_002** \
@@ -455,13 +456,29 @@ Describe the spatial units that you rely on in your analyses. Highlight the spat
 ### 9.1 URGR_001
 #### 9.1.1 Preparation of the data
 First we need to create separate data sets for each ecosystem types that are relevant to include in "urban green ecosystems". According to the @cond-gn-eurostat, all ecosystem types in the EU Ecosystem Types Typology with a green cover should be included. This means that, in the EU Ecosystem Typology, we only discard: 10. Marine inlets and transitional waters, 12. Marine Ecosystems, and 1. Settlements and Other Artificial areas except classes 1.4 Urban greenspace and 1.5.2 Cemeteries. Note that the new Grunnkart has several tiles and not all of them have the same projection.
+
+```{r conditionalPath}
+
+dir <- substr(getwd(), 1,3)
+
+if (grepl("^[Cc]:/", dir)) {
+  p_path <- "P:/"
+  r_path <- "R:/"
+} else if (dir == "/da") {
+  p_path <- "/data/P-Prosjekter2/"
+  r_path <- "/data/R/"
+} else {
+  p_path <- NULL  
+  r_path <- NULL  
+}
+```
 ```{r}
 #| eval: false
 #| code-summary: "Create Ecosystem Types datasets"
 
 # Code co-created by Sylvie Clappe and Jennifer E. Hansen
 # path to the Grunnkart data
-gdb_folder <- "/data/R/GeoSpatialData/LandUse/Norway_Arealregnskap/Original/GrunnkartArealregnskap FGDB-format"
+gdb_folder <- paste0(r_path, "GeoSpatialData/LandUse/Norway_Arealregnskap/Original/GrunnkartArealregnskap FGDB-format")
 
 # List the gdb files
 gdb_files <- list.files(gdb_folder, pattern = "_gdb\\.gdb$", 
@@ -469,7 +486,7 @@ gdb_files <- list.files(gdb_folder, pattern = "_gdb\\.gdb$",
 
 # Define CRS of the first layer (most common CRS of the gdb files)
 gk_crs <- st_read(gdb_files[1], query = "SELECT * FROM arealregnskap LIMIT 500") %>%
-            crs()
+            sf::st_crs()
 
 # Function to read a single filtered file
 read_gdb <- function(gdb_path, projection_crs) {
